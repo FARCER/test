@@ -1,9 +1,10 @@
 import './style.css'
+import { chart } from './js/chart';
+import { getChartData } from './js/data';
 
 const temp = require('./temperature.json');
 const precipitation = require('./precipitation.json');
 
-console.log(temp)
 
 function init() {
   createYearsOptions();
@@ -25,19 +26,26 @@ function initDb() {
 
   openDb.onsuccess = () => {
     db = openDb.result;
-    let data = temp.splice(0, 1000);
-    console.log(db)
     temp.forEach(day => addToStore(day));
+    let tx = db.transaction('temperature', 'readonly');
+    let store = tx.objectStore('temperature');
+    let req = store.getAll()
+
+    req.onsuccess = () => {
+      console.log(req.result)
+    }
+
+    req.onerror = () => {
+      console.log(req.result)
+    }
   }
 
   function addToStore(day) {
     const request = db.transaction('temperature', 'readwrite').objectStore('temperature').add(day);
 
     request.onsuccess = () => {
-      console.log(`New student added, email: ${request.result}`);
     }
     request.onerror = (err) => {
-      console.error(`Error to add new student: ${err}`)
     }
   }
 
@@ -62,28 +70,6 @@ function createYearsOptions() {
 }
 
 init();
+chart(document.getElementById('view'), getChartData())
 
 
-const WIDTH = 600;
-const HEIGHT = 200;
-const DPI_WIDTH = WIDTH * 2;
-const DPI_HEIGHT = HEIGHT * 2;
-
-function chart(canvas, data) {
-  const ctx = canvas.getContext('2d');
-  canvas.style.width = WIDTH + 'px';
-  canvas.style.height = HEIGHT + 'px';
-  canvas.width = DPI_WIDTH;
-  canvas.height = DPI_HEIGHT;
-
-  ctx.beginPath();
-  for (const [x, y] of data) {
-    ctx.lineTo(x, DPI_HEIGHT - y);
-    ctx.stroke();
-  }
-
-  ctx.closePath();
-
-}
-
-chart(document.getElementById('view'), [[0, 0], [200, 200], [400, 100]])
